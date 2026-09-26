@@ -55,7 +55,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -690,29 +689,8 @@ public class Adapter {
 			return recipeContext;
 		}
 		if (versionChecker.newerThan(ServerVersion.v1_13)) {
-			if (recipe instanceof ShapedRecipe) {
-				ShapedRecipe shaped = (ShapedRecipe) recipe;
-				for (Entry<Character, RecipeChoice> choiceEntry : shaped.getChoiceMap().entrySet()) {
-					final RecipeChoice choice = choiceEntry.getValue();
-					if (choice == null) continue;
-					if (choice instanceof RecipeChoice.MaterialChoice) {
-						((RecipeChoice.MaterialChoice) choice).getChoices().forEach(material -> recipeContext.mergeItem(material, 1));
-					} else if (choice instanceof RecipeChoice.ExactChoice) {
-						((RecipeChoice.ExactChoice) choice).getChoices().forEach(stack -> recipeContext.mergeItem(stack.getType(), 1));
-					} else
-						recipeContext.mergeItem(choice.getItemStack().getType(), 1);
-					amount++;
-				}
-			}
-			if (recipe instanceof ShapelessRecipe) {
-				ShapelessRecipe shapeless = (ShapelessRecipe) recipe;
-				for (RecipeChoice choice : shapeless.getChoiceList()) {
-					if (choice == null) continue;
-					recipeContext.mergeItem(choice.getItemStack().getType(), 1);
-					amount++;
-				}
-			}
-
+			if (recipe instanceof ShapedRecipe || recipe instanceof ShapelessRecipe)
+				return RecipeChoiceIndexer.index(recipe);
 		} else {
 			if (recipe instanceof ShapedRecipe) {
 				ShapedRecipe shaped = (ShapedRecipe) recipe;

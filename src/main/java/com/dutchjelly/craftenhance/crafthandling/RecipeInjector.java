@@ -97,18 +97,21 @@ public class RecipeInjector implements Listener {
 
 	@EventHandler
 	public void onJoin(final PlayerJoinEvent e) {
+		discoverRecipes(e.getPlayer());
+	}
+
+	public void discoverRecipes(final Player player) {
 		if (self().getConfig().getBoolean("learn-recipes")) {
-			final Player player = e.getPlayer();
 			try {
 				for (final NamespacedKey namespacedKey : player.getDiscoveredRecipes()) {
-					if (namespacedKey.getNamespace().contains("craftenhance")) {
+					if (namespacedKey.getNamespace().equals("craftenhance")) {
 						player.undiscoverRecipe(namespacedKey);
 					}
 				}
 			} catch (final Exception ignored) {
 			}
 			Adapter.DiscoverRecipes(player, self().getCacheRecipes().getListOfRecipes().stream()
-					.filter(enhancedRecipe -> FormatListContents.canViewRecipe(enhancedRecipe, player))
+					.filter(enhancedRecipe -> !enhancedRecipe.isRemove() && FormatListContents.canViewRecipe(enhancedRecipe, player))
 					.map(ServerLoadable::getServerRecipe)
 					.collect(Collectors.toList()));
 		}

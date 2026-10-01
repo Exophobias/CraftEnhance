@@ -60,7 +60,7 @@ public class RecipeLoader {
 	private List<Recipe> disabledServerRecipes = new ArrayList<>();
 	private final Map<RecipeType, RecipeRegistry> mappedRecipes = new HashMap<>();
 
-	private RecipeLoader(final Server server, final CategoryDataCache categoryDataCache) {
+	RecipeLoader(final Server server, final CategoryDataCache categoryDataCache) {
 		this.server = server;
 		updateServerRecipes();
 		this.categoryDataCache = categoryDataCache;
@@ -71,15 +71,37 @@ public class RecipeLoader {
 	}
 
 	public static void refreshInstance() {
-		instance.unloadAllCehRecipes();
-		instance = null;
 		RecipeLoader loader = getInstance();
-		final List<Recipe> collect = self().getFm().readDisabledServerRecipes().stream().map(x ->
-				Adapter.FilterRecipes(loader.getLoadedServerRecipes(), x)
-		).collect(Collectors.toList());
-		loader.disableServerRecipes(collect);
-		self().getCacheRecipes().getRecipes().forEach((string, enhancedRecipe) -> loader.loadRecipe(enhancedRecipe));
-		loader.printGroupsDebugInfo();
+		loader.rebuildRecipes(self().getCacheRecipes().getListOfRecipes(), self().getFm().readDisabledServerRecipes());
+		self().getCacheRecipes().setGroupCacheDirty(true);
+		self().reLearnRecipes();
+	}
+
+	/** Reconcile the current server registry without replacing references held by crafting handlers. */
+	public void rebuildRecipes(final List<EnhancedRecipe> recipes, final List<String> disabledIdentifiers) {
+		final List<Recipe> previousDisabled = new ArrayList<>(this.disabledServerRecipes);
+		unloadAllCehRecipes();
+		clearCache();
+		updateServerRecipes();
+		for (final String identifier : disabledIdentifiers) {
+			final Recipe disabled;
+			if (identifier.contains(":")) {
+				final NamespacedKey key = NamespacedKey.fromString(identifier);
+				if (key == null) continue;
+				final Recipe current = server.getRecipe(key);
+				disabled = current != null ? current : previousDisabled.stream()
+						.filter(recipe -> key.equals(Adapter.getNamespacedKey(recipe))).findFirst().orElse(null);
+			} else {
+				// Retain support for legacy material identifiers; namespaced keys must match exactly.
+				final Recipe current = Adapter.FilterRecipes(getLoadedServerRecipes(), identifier);
+				disabled = current != null ? current : Adapter.FilterRecipes(previousDisabled, identifier);
+			}
+			if (disabled != null) disableServerRecipe(disabled);
+		}
+		for (final EnhancedRecipe recipe : recipes) {
+			if (!recipe.isRemove()) loadRecipe(recipe);
+		}
+		printGroupsDebugInfo();
 	}
 
 	@Nonnull
@@ -214,14 +236,17 @@ public class RecipeLoader {
 	}
 
 	public boolean disableServerRecipe(final Recipe r) {
+		if (r == null) return false;
 		final RecipeType type = RecipeType.getType(r);
 		final RecipeRegistry recipeRegistry = this.mappedRecipes.get(type);
 
-		if (recipeRegistry != null && recipeRegistry.removeRecipe(r)) {
-			Debug.send(Type.Other, "Unloading recipe", () -> "Disabling server recipe for " + r.getResult().getType().name());
-			disabledServerRecipes.add(r);
-			unloadRecipe(r);
-		}
+		if (recipeRegistry != null) recipeRegistry.removeRecipe(r);
+		Debug.send(Type.Other, "Unloading recipe", () -> "Disabling server recipe for " + r.getResult().getType().name());
+		if (!disabledServerRecipes.contains(r)) disabledServerRecipes.add(r);
+		// Similar custom ingredients can exclude a vanilla recipe from our lookup cache.
+		// Its Bukkit registration must still be removed.
+		unloadRecipe(r);
+		// The recipe-disabler GUI uses false to persist and refresh after this operation.
 		return false;
 	}
 

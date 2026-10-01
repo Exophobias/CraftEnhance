@@ -16,6 +16,13 @@ Some examples of why I would use this plugin as an API in certain cases is to:
 
 ### Changelog
 
+##### 2.6.1.3-patriam.2
+
+The Patriam Paper 26.3 fork restores custom recipes and disabled vanilla recipes
+after Minecraft datapack reloads. It rebuilds the existing crafting cache,
+preserves recipe keys and other plugins' recipes, and refreshes recipe discovery
+for eligible online players. Startup recipe registration runs on the server thread.
+
 ##### 2.6.1
 ```diff
 + Completely reworked the server-side recipe lookup system for significantly better performance and efficiency.

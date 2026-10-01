@@ -21,9 +21,9 @@ import com.dutchjelly.craftenhance.commands.edititem.LocalizedNameCmd;
 import com.dutchjelly.craftenhance.commands.edititem.LoreCmd;
 import com.dutchjelly.craftenhance.crafthandling.RecipeInjector;
 import com.dutchjelly.craftenhance.crafthandling.RecipeLoader;
+import com.dutchjelly.craftenhance.crafthandling.RecipeReloadListener;
 import com.dutchjelly.craftenhance.crafthandling.recipes.EnhancedFurnaceRecipe;
 import com.dutchjelly.craftenhance.crafthandling.recipes.EnhancedRecipe;
-import com.dutchjelly.craftenhance.crafthandling.recipes.ServerLoadable;
 import com.dutchjelly.craftenhance.crafthandling.recipes.WBRecipe;
 import com.dutchjelly.craftenhance.crafthandling.recipes.furnace.BlastRecipe;
 import com.dutchjelly.craftenhance.crafthandling.recipes.furnace.SmokerRecipe;
@@ -41,7 +41,6 @@ import com.dutchjelly.craftenhance.gui.guis.editors.IngredientsCache;
 import com.dutchjelly.craftenhance.gui.templates.GuiTemplate;
 import com.dutchjelly.craftenhance.gui.templates.GuiTemplate.TemplateItemStack;
 import com.dutchjelly.craftenhance.gui.util.ButtonType;
-import com.dutchjelly.craftenhance.gui.util.FormatListContents;
 import com.dutchjelly.craftenhance.messaging.Debug;
 import com.dutchjelly.craftenhance.messaging.Debug.Type;
 import com.dutchjelly.craftenhance.messaging.Messenger;
@@ -64,7 +63,6 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.Recipe;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.jetbrains.annotations.NotNull;
@@ -110,6 +108,7 @@ public class CraftEnhance extends JavaPlugin {
 	@Getter
 	private boolean usingItemsAdder;
 	private volatile boolean isReloading;
+	private boolean recipesLoaded;
 	@Getter
 	private MenuSettingsCache menuSettingsCache;
 	@Getter
@@ -158,6 +157,7 @@ public class CraftEnhance extends JavaPlugin {
 	@Override
 	public void onEnable() {
 		plugin = this;
+		recipesLoaded = false;
 		Debug.init(this);
 		Messenger.Init(this);
 
@@ -234,11 +234,13 @@ public class CraftEnhance extends JavaPlugin {
 			this.playerCheckTask = new PlayerCheckTask();
 			this.playerCheckTask.start();
 			this.localizationCache.reload();
+			reLearnRecipes();
 		});
 	}
 
 	@Override
 	public void onDisable() {
+		recipesLoaded = false;
 		if (!this.isReloading)
 			getServer().resetRecipes();
 		stopAllTasks();
@@ -261,11 +263,20 @@ public class CraftEnhance extends JavaPlugin {
 
 	public void reloadServerRecipes() {
 		RecipeLoader loader = RecipeLoader.getInstance();
-		final List<Recipe> collect = fm.readDisabledServerRecipes().stream().map(x ->
-				Adapter.FilterRecipes(loader.getLoadedServerRecipes(), x)
-		).collect(Collectors.toList());
-		loader.disableServerRecipes(collect);
-		loader.updateServerRecipes();
+		loader.rebuildRecipes(this.cacheRecipes.getListOfRecipes(), fm.readDisabledServerRecipes());
+		this.cacheRecipes.setGroupCacheDirty(true);
+	}
+
+	public void restoreRecipesAfterResourceReload() {
+		// An early reload needs no restoration: startup will index the latest registry on the main thread.
+		if (!recipesLoaded) return;
+		final RecipeLoader loader = RecipeLoader.getInstance();
+		final List<String> disabled = loader.getDisabledServerRecipes().stream()
+				.map(Adapter::GetRecipeIdentifier).filter(java.util.Objects::nonNull).collect(Collectors.toList());
+		loader.rebuildRecipes(this.cacheRecipes.getListOfRecipes(), disabled);
+		this.cacheRecipes.setGroupCacheDirty(true);
+		reLearnRecipes();
+		getLogger().info("Restored CraftEnhance recipes after server resource reload.");
 	}
 
 
@@ -356,6 +367,7 @@ public class CraftEnhance extends JavaPlugin {
 		HandlerList.unregisterAll(RecipeLoader.getInstance());*/
 		guiManager = new GuiManager(this);
 		getServer().getPluginManager().registerEvents(injector, this);
+		getServer().getPluginManager().registerEvents(new RecipeReloadListener(this), this);
 		getServer().getPluginManager().registerEvents(guiManager, this);
 		//getServer().getPluginManager().registerEvents(RecipeLoader.getInstance(), this);
 	}
@@ -388,22 +400,20 @@ public class CraftEnhance extends JavaPlugin {
 		this.usingItemsAdder = this.getServer().getPluginManager().getPlugin("ItemsAdder") != null;
 		//Most other instances use the file manager, so setup before everything.
 		Debug.send(Type.Loading, "Loading plugin", () -> "Loading recipes");
-		final RecipeLoader loader = RecipeLoader.getInstance();
 		final List<EnhancedRecipe> recipes = this.database.loadRecipes();
 		this.cacheRecipes.addAll(recipes);
-		runTask(() -> this.loadingRecipes(loader));
-		injector.setLoader(loader);
-		injector.reload();
+		runTask(() -> {
+			final RecipeLoader loader = RecipeLoader.getInstance();
+			this.loadingRecipes(loader);
+			injector.setLoader(loader);
+			injector.reload();
+			recipesLoaded = true;
+			reLearnRecipes();
+		});
 	}
 
 	private void loadingRecipes(final RecipeLoader loader) {
-		this.cacheRecipes.getListOfRecipes().stream().filter(x -> x.validate() == null).forEach((recipe) -> loader.loadRecipe(recipe, isReloading));
-		loader.printGroupsDebugInfo();
-		loader.disableServerRecipes(
-				fm.readDisabledServerRecipes().stream().map(x ->
-						Adapter.FilterRecipes(loader.getLoadedServerRecipes(), x)
-				).collect(Collectors.toList())
-		);
+		loader.rebuildRecipes(this.cacheRecipes.getListOfRecipes(), fm.readDisabledServerRecipes());
 		this.cacheRecipes.setGroupCacheDirty(true);
 
 
@@ -447,12 +457,9 @@ public class CraftEnhance extends JavaPlugin {
 	}
 
 	public void reLearnRecipes() {
-		//todo learn recipes are little broken. when you reload it. This is an attempt to force learn recipes too all players.
+		Bukkit.updateRecipes();
 		if (!Bukkit.getOnlinePlayers().isEmpty() && self().getConfig().getBoolean("learn-recipes"))
 			for (final Player player : Bukkit.getOnlinePlayers())
-				Adapter.DiscoverRecipes(player, getCacheRecipes().getListOfRecipes().stream()
-						.filter(enhancedRecipe -> FormatListContents.canViewRecipe(enhancedRecipe, player))
-						.map(ServerLoadable::getServerRecipe)
-						.collect(Collectors.toList()));
+				injector.discoverRecipes(player);
 	}
 }

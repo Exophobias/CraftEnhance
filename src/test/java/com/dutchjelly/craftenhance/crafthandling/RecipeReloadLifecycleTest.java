@@ -37,7 +37,9 @@ class RecipeReloadLifecycleTest {
 	void earlyResourceReloadLeavesRegistrationToStartup() {
 		CraftEnhance plugin = mock(CraftEnhance.class);
 		doCallRealMethod().when(plugin).restoreRecipesAfterResourceReload();
-		try (MockedStatic<RecipeLoader> loaders = mockStatic(RecipeLoader.class)) {
+		try (MockedStatic<RecipeLoader> loaders = mockStatic(RecipeLoader.class);
+		     MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class)) {
+			bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
 			new RecipeReloadListener(plugin).onResourcesReloaded(event());
 			loaders.verifyNoInteractions();
 			verify(plugin, never()).reLearnRecipes();
@@ -78,6 +80,7 @@ class RecipeReloadLifecycleTest {
 		     MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class)) {
 			self.when(CraftEnhance::self).thenReturn(plugin);
 			loaders.when(RecipeLoader::getInstance).thenReturn(loader);
+			bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
 			bukkit.when(Bukkit::getOnlinePlayers).thenReturn(Collections.singletonList(player));
 			bukkit.when(Bukkit::updateRecipes).thenAnswer(invocation -> { order.add("synced"); return null; });
 			new RecipeReloadListener(plugin).onResourcesReloaded(event());

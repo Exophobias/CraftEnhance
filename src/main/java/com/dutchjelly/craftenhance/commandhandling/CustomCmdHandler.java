@@ -132,7 +132,7 @@ public class CustomCmdHandler implements TabCompleter{
         List<String> tabCompletion = new ArrayList<>();
 
 		ICommand executor = getExecutor(label, args.length > 0 ? args[0] : "");
-		if (executor != null) {
+		if (executor != null && hasPermission(sender, commandClasses.get(executor))) {
 			List<String> handleTabCompletion = executor.handleTabCompletion(sender, args);
 			if (handleTabCompletion != null) {
 				CommandRoute annotation = commandClasses.get(executor);
@@ -292,9 +292,10 @@ public class CustomCmdHandler implements TabCompleter{
             sender.sendMessage(ChatColor.GREEN + "/" + entry.getValue().cmdPath()[0].replace('.', ' ')
                     + ChatColor.DARK_GRAY + " - " + ChatColor.GRAY + description);
         }
-        sender.sendMessage(ChatColor.DARK_GRAY + (page < totalPages
-                ? "---------- /ceh help " + (page + 1) + " for more ----------"
-                : "----------------------------------------"));
+        sender.sendMessage(page < totalPages
+                ? ChatColor.DARK_GRAY + "---------- " + ChatColor.GREEN + "/ceh help " + (page + 1)
+                    + ChatColor.GRAY + " for more " + ChatColor.DARK_GRAY + "----------"
+                : ChatColor.DARK_GRAY + "----------------------------------------");
     }
 
 }

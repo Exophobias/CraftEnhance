@@ -280,8 +280,6 @@ public class WBRecipeComparer {
 							return false;
 						}
 					} else {
-						// Gamla versioner kollar bara rak material-typ
-						// (Om du vill kolla metadata/durability lägger du till det här)
 						if (item == null || item.getType() != ingredient.getType()) {
 							//ItemMatchers.matchTypeNoMeta();
 							return false;
@@ -312,7 +310,7 @@ public class WBRecipeComparer {
 					break;
 				}
 			}
-			// Om spelaren lagt till ett extra föremål som inte krävs
+
 			if (!matchFound) {
 				return null;
 			}

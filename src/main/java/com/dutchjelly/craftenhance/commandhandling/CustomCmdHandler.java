@@ -3,6 +3,7 @@ package com.dutchjelly.craftenhance.commandhandling;
 import com.dutchjelly.craftenhance.CraftEnhance;
 import com.dutchjelly.craftenhance.messaging.Debug;
 import com.dutchjelly.craftenhance.messaging.Messenger;
+import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
@@ -21,7 +22,7 @@ public class CustomCmdHandler implements TabCompleter{
 
 	//Pass main instance and register tab completion on all commands.
 	public CustomCmdHandler(CraftEnhance main){
-		commandClasses = new HashMap<>();
+		commandClasses = new LinkedHashMap<>();
 		this.main = main;
 		main.getDescription().getCommands().keySet().forEach(x ->{
 			main.getCommand(x).setTabCompleter(this);
@@ -60,13 +61,19 @@ public class CustomCmdHandler implements TabCompleter{
 
 	//Assign command to a class and check for permissions.
 	public boolean handleCommand(CommandSender sender, String label, String[] args){
-		ICommand executor;
+		if (args.length == 0 && (label.equalsIgnoreCase("ceh") || label.equalsIgnoreCase("edititem"))
+                || args.length > 0 && args[0].equalsIgnoreCase("help")) {
+            showHelp(sender, args.length > 0 ? Arrays.copyOfRange(args, 1, args.length) : args);
+            return true;
+        }
+        ICommand executor;
 		args = pushLabelArg(label, args);
 
 		executor = getExecutor(args);
 		if(executor == null) {
-			sendOptions(args, sender);
-			return true;
+            sender.sendMessage(ChatColor.RED + "Unknown command.");
+            showHelp(sender, new String[0]);
+            return true;
 		}
 
 		CommandRoute annotation = commandClasses.get(executor);
@@ -97,7 +104,7 @@ public class CustomCmdHandler implements TabCompleter{
 			emptyLast[i] = args[i];
 		}
 		emptyLast[args.length] = "";
-		String completions = String.join(", ", getTabCompleteMatches(emptyLast));
+		String completions = String.join(", ", getTabCompleteMatches(sender, emptyLast));
 		if(completions.equals("")) {
 			Messenger.Message("That is not a command.", sender);
 			return;
@@ -117,8 +124,12 @@ public class CustomCmdHandler implements TabCompleter{
 	//Handle tab completion by returning all tab completions.
 	@Override
 	public List<String> onTabComplete(CommandSender sender, Command cmd, String label,String[] args) {
-		String[] completeArgs = pushLabelArg(label, args);
-		List<String> tabCompletion = new ArrayList<>();
+        if (args.length > 0 && args[0].equalsIgnoreCase("help")) {
+            if (args.length == 2 && hasStaffHelp(sender) && "staff".startsWith(args[1].toLowerCase(Locale.ROOT)))
+                return Collections.singletonList("staff");
+            return Collections.emptyList();
+        }
+        List<String> tabCompletion = new ArrayList<>();
 
 		ICommand executor = getExecutor(label, args.length > 0 ? args[0] : "");
 		if (executor != null) {
@@ -133,8 +144,9 @@ public class CustomCmdHandler implements TabCompleter{
 //		ICommand suitableExecutor = getExecutor(args);
 //		if(suitableExecutor != null && suitableExecutor instanceof ICompletionProvider)
 //			tabCompletion.addAll(((ICompletionProvider)suitableExecutor).getCompletions(args));
-		tabCompletion.addAll(getTabCompleteMatches(pushLabelArg(label, args)));
-		return tabCompletion;
+		tabCompletion.addAll(getTabCompleteMatches(sender, pushLabelArg(label, args)));
+        if (args.length == 1 && "help".startsWith(args[0].toLowerCase(Locale.ROOT))) tabCompletion.add("help");
+        return tabCompletion;
 	}
 
 	//Pop amount arguments recursively from args.
@@ -199,17 +211,19 @@ public class CustomCmdHandler implements TabCompleter{
 	private boolean hasPermission(CommandSender sender, CommandRoute annotation){
 		if( annotation.perms() == null || annotation.perms().equals(""))
 			return true;
-		String perms = main.getConfig().getString(annotation.perms()) + "";
-		if(perms.trim().equals("")) return true;
-		return sender.hasPermission(perms);
+        String perms = annotation.perms().startsWith("perms.")
+                ? main.getConfig().getString(annotation.perms()) : annotation.perms();
+        if (perms == null) return false;
+        return perms.trim().isEmpty() || sender.hasPermission(perms);
 	}
 
 	//Find all possible tab completions for args.
-	private List<String> getTabCompleteMatches(String[] args){
+	private List<String> getTabCompleteMatches(CommandSender sender, String[] args){
 		List<String> completions = new ArrayList<String>();
 		String completion;
 		for(ICommand cmdClass : commandClasses.keySet()){
 			CommandRoute annotation = commandClasses.get(cmdClass);
+            if (!hasPermission(sender, annotation)) continue;
 			for(String path : annotation.cmdPath()){
 				completion = getCompletion(args, path);
 				if(completion == null) continue;
@@ -233,5 +247,54 @@ public class CustomCmdHandler implements TabCompleter{
 	}
 
 
+
+    private boolean staff(CommandRoute route) {
+        return !route.perms().equals("perms.recipe-viewer");
+    }
+
+    private boolean hasStaffHelp(CommandSender sender) {
+        return commandClasses.values().stream().anyMatch(route -> staff(route) && hasPermission(sender, route));
+    }
+
+    private void showHelp(CommandSender sender, String[] args) {
+        List<Map.Entry<ICommand, CommandRoute>> ordinary = new ArrayList<>();
+        List<Map.Entry<ICommand, CommandRoute>> staff = new ArrayList<>();
+        for (Map.Entry<ICommand, CommandRoute> entry : commandClasses.entrySet()) {
+            if (hasPermission(sender, entry.getValue()))
+                (staff(entry.getValue()) ? staff : ordinary).add(entry);
+        }
+        staff.sort(Comparator.comparing(entry -> entry.getValue().cmdPath()[0].endsWith(".test")));
+        boolean directStaff = args.length > 0 && args[0].equalsIgnoreCase("staff");
+        if (directStaff && staff.isEmpty() || ordinary.isEmpty() && staff.isEmpty()) {
+            sender.sendMessage(ChatColor.RED + "You do not have permission to do that.");
+            return;
+        }
+        int ordinaryPages = (ordinary.size() + 7) / 8;
+        int totalPages = ordinaryPages + (staff.size() + 7) / 8;
+        int requested = 1;
+        try { requested = Integer.parseInt(args[directStaff ? 1 : 0]); }
+        catch (NumberFormatException | ArrayIndexOutOfBoundsException ignored) { }
+        int page = directStaff ? ordinaryPages + Math.max(1, Math.min((staff.size() + 7) / 8, requested))
+                : Math.max(1, Math.min(totalPages, requested));
+        boolean staffPage = page > ordinaryPages;
+        List<Map.Entry<ICommand, CommandRoute>> entries = staffPage ? staff : ordinary;
+        int offset = ((staffPage ? page - ordinaryPages : page) - 1) * 8;
+        sender.sendMessage(ChatColor.DARK_GRAY + "---------- " + ChatColor.GREEN + "CraftEnhance"
+                + (staffPage ? " Staff" : "") + (totalPages > 1 ? ChatColor.DARK_GRAY + " ("
+                + ChatColor.WHITE + page + "/" + totalPages + ChatColor.DARK_GRAY + ")" : "")
+                + ChatColor.DARK_GRAY + " ----------");
+        for (int i = offset; i < Math.min(entries.size(), offset + 8); i++) {
+            Map.Entry<ICommand, CommandRoute> entry = entries.get(i);
+            String description = entry.getKey().getDescription().replaceAll("[\\r\\n]+", " ");
+            int sentenceEnd = description.indexOf(". ");
+            if (sentenceEnd >= 0) description = description.substring(0, sentenceEnd);
+            if (description.isEmpty()) description = "change the recipe permission";
+            sender.sendMessage(ChatColor.GREEN + "/" + entry.getValue().cmdPath()[0].replace('.', ' ')
+                    + ChatColor.DARK_GRAY + " - " + ChatColor.GRAY + description);
+        }
+        sender.sendMessage(ChatColor.DARK_GRAY + (page < totalPages
+                ? "---------- /ceh help " + (page + 1) + " for more ----------"
+                : "----------------------------------------"));
+    }
 
 }

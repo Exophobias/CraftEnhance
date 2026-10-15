@@ -20,7 +20,7 @@ public class Disabler implements ICommand {
 
 	@Override
 	public String getDescription() {
-		return "Use the command to open a gui in which you can disable/enable server recipes.";
+		return "open server recipe enable/disable controls";
 	}
 
 	@Override

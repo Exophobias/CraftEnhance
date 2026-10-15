@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 
 import static com.dutchjelly.craftenhance.CraftEnhance.self;
 
-@CommandRoute(cmdPath="edititem.enchant", perms="perms.item-editor")
+@CommandRoute(cmdPath="edititem.enchant", perms="perms.item-editor", arguments="<enchantment> <level> [...]|clear")
 public class EnchantCmd implements ICommand, ICompletionProvider {
 
 	
@@ -32,7 +32,7 @@ public class EnchantCmd implements ICommand, ICompletionProvider {
 	
 	@Override
 	public String getDescription() {
-		return "The enchant command allows users to efficiently enchant items with any enchantment with any level. On use this command will remove all enchantments currently on the held item and enchant it with all specified enchantments. An example of the usage is /edititem enchant protection 10 punch 10 unbreaking 3 fire_protection 4.";
+		return "add held-item enchantments or clear them all";
 	}
 
 	@Override

@@ -11,7 +11,7 @@ import org.bukkit.entity.Player;
 import java.util.ArrayList;
 import java.util.List;
 
-@CommandRoute(cmdPath = "ceh.specs", perms = "perms.recipe-editor")
+@CommandRoute(cmdPath = "ceh.specs", perms = "perms.recipe-editor", arguments="<key>")
 public class SpecsCommand implements ICommand {
 
 	private CustomCmdHandler handler;
@@ -22,7 +22,7 @@ public class SpecsCommand implements ICommand {
 
 	@Override
 	public String getDescription() {
-		return "The view command opens an inventory that contains all available recipes for the sender of the command, unless it's configured to show all. The usage is /ceh view or /recipes";
+		return "show a recipe key and permission";
 	}
 
 	@Override

@@ -10,7 +10,7 @@ import com.dutchjelly.craftenhance.commandhandling.CustomCmdHandler;
 import com.dutchjelly.craftenhance.itemcreation.ItemCreator;
 import com.dutchjelly.craftenhance.itemcreation.ParseResult;
 
-@CommandRoute(cmdPath = "edititem.name", perms = "perms.item-editor")
+@CommandRoute(cmdPath = "edititem.name", perms = "perms.item-editor", arguments="[name...]")
 public class DisplayNameCmd implements ICommand {
 
 	private CustomCmdHandler handler;
@@ -21,7 +21,7 @@ public class DisplayNameCmd implements ICommand {
 	
 	@Override
 	public String getDescription() {
-		return "With this command the displayname of the held item can be set. Here's an example of the usage: &7/edititem name example name";
+		return "set or clear the held item display name";
 	}
 
 	@Override

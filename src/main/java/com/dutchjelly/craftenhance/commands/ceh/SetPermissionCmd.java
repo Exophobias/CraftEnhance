@@ -8,7 +8,7 @@ import com.dutchjelly.craftenhance.messaging.Messenger;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-@CommandRoute(cmdPath="ceh.setpermission", perms="perms.recipe-editor")
+@CommandRoute(cmdPath="ceh.setpermission", perms="perms.recipe-editor", arguments="<key> <permission>")
 public class SetPermissionCmd implements ICommand {
 
 	private final CustomCmdHandler handler;
@@ -19,7 +19,7 @@ public class SetPermissionCmd implements ICommand {
 
 	@Override
 	public String getDescription() {
-		return "";
+		return "change a recipe permission";
 	}
 
 	@Override

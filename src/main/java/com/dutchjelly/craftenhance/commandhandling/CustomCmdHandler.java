@@ -86,7 +86,7 @@ public class CustomCmdHandler implements TabCompleter{
 		args = popArguments(commandLabels.length, args);
 
 		if(args.length > 0 && args[0].equalsIgnoreCase("help")){
-			Messenger.Message(executor.getDescription(), sender);
+            showCommandHelp(sender, executor, annotation);
 			return true;
 		}
 
@@ -285,17 +285,28 @@ public class CustomCmdHandler implements TabCompleter{
                 + ChatColor.DARK_GRAY + " ----------");
         for (int i = offset; i < Math.min(entries.size(), offset + 8); i++) {
             Map.Entry<ICommand, CommandRoute> entry = entries.get(i);
-            String description = entry.getKey().getDescription().replaceAll("[\\r\\n]+", " ");
-            int sentenceEnd = description.indexOf(". ");
-            if (sentenceEnd >= 0) description = description.substring(0, sentenceEnd);
-            if (description.isEmpty()) description = "change the recipe permission";
-            sender.sendMessage(ChatColor.GREEN + "/" + entry.getValue().cmdPath()[0].replace('.', ' ')
-                    + ChatColor.DARK_GRAY + " - " + ChatColor.GRAY + description);
+            sender.sendMessage(helpRow(entry.getKey(), entry.getValue()));
         }
         sender.sendMessage(page < totalPages
                 ? ChatColor.DARK_GRAY + "---------- " + ChatColor.GREEN + "/ceh help " + (page + 1)
                     + ChatColor.GRAY + " for more " + ChatColor.DARK_GRAY + "----------"
                 : ChatColor.DARK_GRAY + "----------------------------------------");
+    }
+
+    private String helpRow(ICommand command, CommandRoute route) {
+        String description = Objects.toString(command.getDescription(), "show command usage")
+                .replaceAll("[\\r\\n]+", " ").trim();
+        if (description.isEmpty()) description = "show command usage";
+        String form = "/" + route.cmdPath()[0].replace('.', ' ');
+        if (!route.arguments().isEmpty()) form += " " + route.arguments();
+        return ChatColor.GREEN + form + ChatColor.DARK_GRAY + " - " + ChatColor.GRAY + description;
+    }
+
+    private void showCommandHelp(CommandSender sender, ICommand command, CommandRoute route) {
+        sender.sendMessage(ChatColor.DARK_GRAY + "---------- " + ChatColor.GREEN + "CraftEnhance"
+                + (staff(route) ? " Staff" : "") + ChatColor.DARK_GRAY + " ----------");
+        sender.sendMessage(helpRow(command, route));
+        sender.sendMessage(ChatColor.DARK_GRAY + "----------------------------------------");
     }
 
 }

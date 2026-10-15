@@ -15,7 +15,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@CommandRoute(cmdPath="edititem.itemflag", perms="perms.item-editor")
+@CommandRoute(cmdPath="edititem.itemflag", perms="perms.item-editor", arguments="<flag...>")
 public class ItemFlagCmd implements ICommand {
 
 	
@@ -27,7 +27,7 @@ public class ItemFlagCmd implements ICommand {
 	
 	@Override
 	public String getDescription() {
-		return "The itemflag command allows users to toggle itemflags of the held item. An example of the usage is /edititem itemflag hide_enchants hide_attributes. These itemflag names are documented in the bukkit documentation, google \"itemflags bukkit\", and the first result should contain a list of all itemflags and what they do.";
+		return "toggle held-item display flags";
 	}
 
 	@Override

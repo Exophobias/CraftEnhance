@@ -27,11 +27,11 @@ import java.util.Random;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
-@CommandRoute(cmdPath = "ceh.test", perms = "ceh.debug")
+@CommandRoute(cmdPath = "ceh.test", perms = "ceh.debug", arguments="<index>")
 public class Test implements ICommand {
 	@Override
 	public String getDescription() {
-		return "Unit tests for the plugin.";
+		return "run recipe diagnostic checks";
 	}
 
 	@Override

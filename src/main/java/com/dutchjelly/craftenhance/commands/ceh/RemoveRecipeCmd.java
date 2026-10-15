@@ -14,7 +14,7 @@ import java.util.List;
 
 import static com.dutchjelly.craftenhance.CraftEnhance.self;
 
-@CommandRoute(cmdPath = "ceh.removerecipe", perms = "perms.recipe-editor")
+@CommandRoute(cmdPath = "ceh.removerecipe", perms = "perms.recipe-editor", arguments="<key>")
 public class RemoveRecipeCmd implements ICommand {
 
 	private CustomCmdHandler handler;
@@ -25,7 +25,7 @@ public class RemoveRecipeCmd implements ICommand {
 
 	@Override
 	public String getDescription() {
-		return "The remove the recipe command. The usage is /ceh createrecipe [key] [permission].";
+		return "remove an existing custom recipe";
 	}
 
 	@Override

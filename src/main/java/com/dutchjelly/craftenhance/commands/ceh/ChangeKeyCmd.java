@@ -9,7 +9,7 @@ import com.dutchjelly.craftenhance.messaging.Messenger;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-@CommandRoute(cmdPath="ceh.changekey", perms="perms.recipe-editor")
+@CommandRoute(cmdPath="ceh.changekey", perms="perms.recipe-editor", arguments="<old-key> <new-key>")
 public class ChangeKeyCmd implements ICommand {
 
 	private CustomCmdHandler handler;
@@ -20,7 +20,7 @@ public class ChangeKeyCmd implements ICommand {
 
 	@Override
 	public String getDescription() {
-		return "With this command you can change the key of an existing recipe. The usage is /ceh changekey oldkey newkey.";
+		return "change an existing recipe key";
 	}
 
 	@Override

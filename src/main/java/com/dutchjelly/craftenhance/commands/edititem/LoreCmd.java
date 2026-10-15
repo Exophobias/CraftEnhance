@@ -10,7 +10,7 @@ import com.dutchjelly.craftenhance.commandhandling.CustomCmdHandler;
 import com.dutchjelly.craftenhance.itemcreation.ItemCreator;
 import com.dutchjelly.craftenhance.itemcreation.ParseResult;
 
-@CommandRoute(cmdPath="edititem.lore", perms="perms.item-editor")
+@CommandRoute(cmdPath="edititem.lore", perms="perms.item-editor", arguments="<line> [text...]")
 public class LoreCmd implements ICommand {
 
 	
@@ -22,7 +22,7 @@ public class LoreCmd implements ICommand {
 	
 	@Override
 	public String getDescription() {
-		return "The lore command allows users to edit the lore of the item. The lore is basically the description below the item name and attributes when hovering over it. An example of the usage is /edititem lore 3 this example text will be put on line 3 of the lore of the held item.";
+		return "set or clear one held-item lore line";
 	}
 
 	@Override

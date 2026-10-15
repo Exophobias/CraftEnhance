@@ -20,7 +20,7 @@ public class LocalizedNameCmd implements ICommand {
 	
 	@Override
 	public String getDescription() {
-		return "The localizedname command is used to edit the name that is stored server-sided, which means that the in-game users can't see it. However, some plugins may use this itemstack property. An example of the usage is /edititem localizedname example name.";
+		return "localized names are unavailable on this server";
 	}
 
 	@Override

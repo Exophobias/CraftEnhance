@@ -10,7 +10,7 @@ import com.dutchjelly.craftenhance.commandhandling.CustomCmdHandler;
 import com.dutchjelly.craftenhance.itemcreation.ItemCreator;
 import com.dutchjelly.craftenhance.itemcreation.ParseResult;
 
-@CommandRoute(cmdPath="edititem.durability", perms="perms.item-editor")
+@CommandRoute(cmdPath="edititem.durability", perms="perms.item-editor", arguments="<0-100>")
 public class DurabilityCmd implements ICommand {
 
 	
@@ -22,7 +22,7 @@ public class DurabilityCmd implements ICommand {
 	
 	@Override
 	public String getDescription() {
-		return "The durability command allows players to edit the durability of items in their main hand. An example of the usage is \"/edititem durability 50\". This will set the durability of the item in the command sender to 50%.";
+		return "set the held item durability percentage";
 	}
 
 	@Override

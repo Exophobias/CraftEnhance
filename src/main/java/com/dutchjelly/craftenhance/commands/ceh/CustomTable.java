@@ -10,7 +10,7 @@ import org.bukkit.entity.Player;
 public class CustomTable implements ICommand {
     @Override
     public String getDescription() {
-        return null;
+		return "open the enhanced crafting table";
     }
 
     @Override

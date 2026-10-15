@@ -18,7 +18,7 @@ public class CleanItemFileCmd implements ICommand {
 
 	@Override
 	public String getDescription() {
-		return "Removes the unused items from the config. The usage is /ceh cleanitemfile.";
+		return "remove unused saved item definitions";
 	}
 
 	@Override

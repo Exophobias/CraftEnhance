@@ -18,14 +18,14 @@ import java.util.UUID;
 import static com.dutchjelly.craftenhance.CraftEnhance.self;
 
 
-@CommandRoute(cmdPath = {"ceh.reload", "ceh.rl"}, perms = "perms.recipe-editor")
+@CommandRoute(cmdPath = {"ceh.reload", "ceh.rl"}, perms = "perms.recipe-editor", arguments="[--force]")
 public class ReloadCmd implements ICommand {
 	private static Set<UUID> players = new HashSet<>();
 	private static Set<String> console = new HashSet<>();
 
 	@Override
 	public String getDescription() {
-		return "Reloads CraftEnhance entirely.";
+		return "reload recipes and operator configuration";
 	}
 
 	@Override

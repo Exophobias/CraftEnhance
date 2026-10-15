@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-@CommandRoute(cmdPath = "ceh.createrecipe", perms = "perms.recipe-editor")
+@CommandRoute(cmdPath = "ceh.createrecipe", perms = "perms.recipe-editor", arguments="[type key [permission]]")
 public class CreateRecipeCmd implements ICommand {
 
 	private CustomCmdHandler handler;
@@ -36,7 +36,7 @@ public class CreateRecipeCmd implements ICommand {
 
 	@Override
 	public String getDescription() {
-		return "The create recipe command allows users to create a recipe and open the editor of it. The usage is /ceh createrecipe [key] [permission]. You can leave both parameters empty. However, if you do want to customise recipe keys and permissions: the key has to be unique, and the permission can be empty to not have any permission. An example: /ceh createrecipe army_chest ceh.army-chest. The now created recipe has a key of army_chest and a permission of ceh.army-chest.";
+		return "open a new recipe editor";
 	}
 
 	@Override

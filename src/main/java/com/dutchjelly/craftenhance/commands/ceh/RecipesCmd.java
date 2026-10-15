@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 import static com.dutchjelly.craftenhance.CraftEnhance.self;
 import static com.dutchjelly.craftenhance.gui.util.FormatListContents.canSeeRecipes;
 
-@CommandRoute(cmdPath = {"recipes", "ceh.viewer"}, perms = "perms.recipe-viewer")
+@CommandRoute(cmdPath = {"recipes", "ceh.viewer"}, perms = "perms.recipe-viewer", arguments="[page <number>|category <category> [recipe]]")
 public class RecipesCmd implements ICommand {
 
 	private final CustomCmdHandler handler;
@@ -37,7 +37,7 @@ public class RecipesCmd implements ICommand {
 
 	@Override
 	public String getDescription() {
-		return "The view command opens an inventory that contains all available recipes for the sender of the command, unless it's configured to show all. The usage is /ceh view or /recipes";
+		return "browse permitted recipes and categories";
 	}
 
 	@Override
@@ -90,6 +90,8 @@ public class RecipesCmd implements ICommand {
 
 	@Override
 	public List<String> handleTabCompletion(final CommandSender sender, final String[] args) {
+        // Recipe-specific completion needs a player's recipe visibility/context.
+        if (!(sender instanceof Player)) return java.util.Collections.emptyList();
 		final List<String> list = new ArrayList<>();
 		if (args.length == 2) {
 			list.add("page");
